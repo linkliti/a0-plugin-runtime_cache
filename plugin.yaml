@@ -1,0 +1,7 @@
+name: runtime_cache
+title: Runtime Cache
+description: Makes Agent Zero faster by remembering prompts and state in memory and refreshing them the moment anything changes on disk.
+version: 1.0.0
+settings_sections: []
+per_project_config: false
+per_agent_config: false
