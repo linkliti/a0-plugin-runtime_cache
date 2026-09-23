@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any
 
 from usr.plugins.runtime_cache.helpers import store
@@ -19,7 +20,10 @@ def _paths_digest() -> str:
     fallback_presets = (
         files.get_abs_path(plugin_dir, FALLBACK_PRESETS_FILE) if plugin_dir else ""
     )
-    return store.stat_digest((user_presets, fallback_presets))
+    legacy_config = plugins.determine_plugin_asset_path(
+        "_model_config", "", "", plugins.CONFIG_FILE_NAME
+    )
+    return store.stat_digest((user_presets, fallback_presets, legacy_config))
 
 
 def install() -> bool:
@@ -28,6 +32,9 @@ def install() -> bool:
 
     if _original is not None:
         return True
+    if hasattr(model_config, "PRESETS_CACHE_AREA"):
+        # v2.13+ caches presets upstream, patching would double-cache
+        return False
 
     original = model_config.get_presets
 
@@ -37,10 +44,10 @@ def install() -> bool:
         key = (project_name, _paths_digest())
         cached = store.get(store.PRESETS_AREA, key)
         if cached is not None:
-            return list(cached)
+            return deepcopy(cached)
         result = original(project_name)
-        store.put(store.PRESETS_AREA, key, list(result))
-        return list(result)
+        store.put(store.PRESETS_AREA, key, deepcopy(result))
+        return result
 
     setattr(model_config, "get_presets", memoized_get_presets)
     _original = original
